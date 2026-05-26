@@ -1,34 +1,60 @@
 import os
-#pastas: Word, Excel
 
-def organizarArquivos(caminho, extensao):
-    for arquivo in os.listdir(caminho):
-        if arquivo.endswith(extensao):
-            os.rename(caminho, destino)
-    if not any(arquivo.endswith(extensao) for arquivo in os.listdir()):
-        print(f"Nenhum arquivo com a extensão {extensao} encontrado.")
-            
+def gerarNomeUnico(destino): #Essa função evita sobrescrever arquivos que possuem o mesmo nome
+    if not os.path.exists(destino): 
+        return destino
+    
+    pasta = os.path.dirname(destino)
+    nome = os.path.basename(destino)
+    nomeBase, extensao = os.path.splitext(nome)
+
+    contador = 1
+    while True:
+        novoNome = f"{nomeBase}_{contador}{extensao}" #Se eu tiver um arquivo.txt que foi organizado e depois eu tentar organizar outro arquivo.txt, ele vai criar um arquivo chamado arquivo_1.txt para evitar sobrescrever o arquivo original
+        novoCaminho = os.path.join(pasta, novoNome)
+
+        if not os.path.exists(novoCaminho):
+            return novoCaminho
+        contador +=1
+
+def organizarArquivos(caminho):
+    if not os.path.exists(caminho):
+        raise FileNotFoundError("O diretório especificado não existe.") #dispara um erro caso o diretório não exista
+    
+    arquivos = os.listdir(caminho)
+
+    if not arquivos:
+        print("Nenhum arquivo encontrado para organizar.")
+        return
+    
+    movidos = 0
+
+    for arquivo in arquivos:
+        origem = os.path.join(caminho, arquivo)
+        
+        if not os.path.isfile(origem): #ignora pastas
+            continue
+
+        nome, extensao = os.path.splitext(arquivo)
+
+        if not extensao: #ignora arquivos sem extensão
+            continue
+
+        extensao = extensao[1:].lower()  # Remove o ponto da extensão e padroniza nome de pastas evitando problemas como "pdf" e "PDF"
+        pastaDestino = os.path.join(caminho, extensao)
+
+        os.makedirs(pastaDestino, exist_ok=True) #cria a pasta de destino se ela não existir, caso contrário, continua
+        destino = os.path.join(pastaDestino, arquivo)
+        destino = gerarNomeUnico(destino)
+        os.rename(origem, destino)
+        movidos += 1
+
+    print(f"Arquivos organizados com sucesso. Total de arquivos movidos: {movidos}")
+
 try:
     caminho = input("Digite o caminho para o diretório: ")
-    os.chdir(caminho)
-
-    while True:
-        print("1 - .docx\n2 - .excel\n")
-        escolha = int(input("Digite qual tipo de arquivo deseja listar: \n"))
-        destino = input("Digite o destino (nome do diretório) para os arquivos: ")
-        destino = f"{caminho}/{destino}"
-        match escolha:
-            case 1:
-                extensao = ".docx"
-                organizarArquivos(caminho, extensao)
-            case 2:
-                extensao = ".xlsx"
-                organizarArquivos(caminho, extensao)
-            case _:
-                print("Opção inválida, tente novamente.")
+    organizarArquivos(caminho)        
 except FileNotFoundError:
     print("Diretório não encontrado.")
-except ValueError:
-    print("Entrada inválida, por favor digite um número.")
 except Exception as e:
     print(f"Ocorreu um erro inesperado: {e}")
